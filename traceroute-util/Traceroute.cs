@@ -65,15 +65,16 @@ namespace traceroute_util
 
             Console.WriteLine("Трассировка маршрута к " + host);
             Console.WriteLine("с максимальным количеством прыжков " + MAXIMUM_JUMPS + ":");
+            Console.WriteLine();
             for (int i = 0; i < MAXIMUM_JUMPS; i++)
             {
                 int errorCount = 0;
                 Console.Write("{0, 2}", i + 1);
                 socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.IpTimeToLive, ttl++);
                 Stopwatch track = new Stopwatch();
+                receivedData = new byte[512];
                 for (int j = 0; j < PACKET_COUNT; j++)
-                {
-                    receivedData = new byte[512];                 
+                {                                   
                     try
                     {        
                         track.Reset();
@@ -90,7 +91,7 @@ namespace traceroute_util
                         errorCount++;
                     }
                 }
-                if (errorCount == 3)
+                if (errorCount == PACKET_COUNT)
                 {
                     Console.Write("  Превышен интервал ожидания для запроса.\n");
                 }
