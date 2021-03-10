@@ -10,23 +10,8 @@ namespace traceroute_util
         private const int MAXIMUM_JUMPS = 30;
         private const int PACKET_COUNT = 3;
         private const int RECEIVE_TIMEOUT = 3000;
-        private static Traceroute instance;
 
-        private Traceroute()
-        {
-
-        }
-
-        public static Traceroute getInstance()
-        {
-            if (instance == null)
-            {
-                instance = new Traceroute();
-            }
-            return instance;
-        }
-
-        public void Run(String host, Boolean isNeedToViewDns)
+        public void Run(string host, bool needToViewDns)
         {   
             IPHostEntry ipHost;
             try
@@ -46,20 +31,11 @@ namespace traceroute_util
 
             IPEndPoint ipEndPoint = new IPEndPoint(ipHost.AddressList[0], 0);
             EndPoint endPoint = ipEndPoint;
-            Socket socket;
-            try
-            {
-                socket = new Socket(AddressFamily.InterNetwork, SocketType.Raw, ProtocolType.Icmp);
-            }
-            catch (SocketException)
-            {
-                Console.WriteLine("Ошибка соединения.");
-                return;
-            }
+            using Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Raw, ProtocolType.Icmp);
 
             socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, RECEIVE_TIMEOUT);
             bool isEndPointReached = false;
-            byte[] data = Icmp.GetEchoIcmpPackage();
+            byte[] data = IcmpUtils.GetEchoIcmpPackage();
             byte[] receivedData;
             int ttl = 1;
 
@@ -83,7 +59,7 @@ namespace traceroute_util
                         socket.ReceiveFrom(receivedData, ref endPoint);
                         track.Stop();
                         long responseTime = track.ElapsedMilliseconds;
-                        isEndPointReached = processReceivedMessage(receivedData, responseTime);
+                        isEndPointReached = DestinationReached(receivedData, responseTime);
                     }
                     catch (SocketException)
                     {
@@ -95,7 +71,7 @@ namespace traceroute_util
                 {
                     Console.Write("  Превышен интервал ожидания для запроса.\n");
                 }
-                else if (isNeedToViewDns)
+                else if (needToViewDns)
                 {
                     ViewDns(endPoint);
                 }
@@ -110,12 +86,11 @@ namespace traceroute_util
                     break;
                 }
             }
-                socket.Close();
         }
 
-        private bool processReceivedMessage(byte[] receivedMessage, long responseTime)
+        private bool DestinationReached(byte[] receivedMessage, long responseTime)
         {
-            int responceType = Icmp.GetIcmpType(receivedMessage);          
+            int responceType = IcmpUtils.GetIcmpType(receivedMessage);          
             if (responceType == 0)
             {
                 Console.Write("{0, 10}", responseTime + " мс");
